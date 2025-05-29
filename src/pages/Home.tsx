@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { searchBooks } from '../services/api';
 import Card from '../components/Card';
 
