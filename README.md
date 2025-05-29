@@ -13,17 +13,20 @@ git clone https://github.com/cyperpeony/book-platform-a01639572.git
 cd book-platform-a01639572
 
 ### 2. Install dependencies
+
 Using Yarn:
 - yarn
 Or npm:
 - npm install
 
 ## 3. Run the development server
+
 yarn dev
 
 The app will be at http://localhost:5173
 
 # Env
+
 Before running the app, create a .env file in the root of the project with:
 
 VITE_FIREBASE_API_KEY=your_firebase_api_key
