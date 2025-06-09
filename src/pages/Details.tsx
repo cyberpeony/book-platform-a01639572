@@ -111,7 +111,7 @@ const Details = () => {
                 Click here to view this book in Google Books.
             </a>
 
-            {user && (
+            {user && id && (
                 <div className="book-actions">
                     <button
                         onClick={(e) => {
