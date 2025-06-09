@@ -4,16 +4,22 @@ import { getBookById } from '../services/api';
 import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { AuthContext } from '../context/AuthContext';
+import { useSavedItems } from '../context/SavedItemsContext';
 
 const Details = () => {
     const { id } = useParams<{ id: string }>();
     const { user } = useContext(AuthContext);
+    const { isSaved, addItem, removeItem } = useSavedItems();
 
     const [book, setBook] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [reviewText, setReviewText] = useState('');
     const [reviews, setReviews] = useState<any[]>([]);
+
+    const savedWishlist = isSaved('wishlist', id || '');
+    const savedQueued = isSaved('queued', id || '');
+    const savedRead = isSaved('read', id || '');
 
     useEffect(() => {
         const fetchBook = async () => {
@@ -46,9 +52,7 @@ const Details = () => {
         e.preventDefault();
         if (!user || !reviewText.trim()) return;
 
-        const displayName =
-            user.displayName ||
-            (user.email ? user.email.split('@')[0] : 'Anonymous');
+        const displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Anonymous');
 
         const review = {
             id: id,
@@ -75,6 +79,14 @@ const Details = () => {
 
     const info = book.volumeInfo;
 
+    const bookData = {
+        id,
+        title: info.title,
+        authors: info.authors || [],
+        image: info.imageLinks?.thumbnail || '',
+        createdAt: new Date()
+    };
+
     return (
         <div className="container book-details">
             <h1>{info.title}</h1>
@@ -89,9 +101,61 @@ const Details = () => {
             ></div>
             <p><strong>Publisher:</strong> {info.publisher || 'Unknown'}</p>
             <p><strong>Published Date:</strong> {info.publishedDate || 'Unknown'}</p>
-            <a href={info.previewLink} target="_blank" rel="noopener noreferrer">
+
+            <a
+                href={info.previewLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="book-link"
+            >
                 Click here to view this book in Google Books.
             </a>
+
+            {user && (
+                <div className="book-actions">
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (savedWishlist) {
+                                removeItem('wishlist', id);
+                            } else {
+                                addItem('wishlist', bookData);
+                            }
+                        }}
+                        className="wishlist-button"
+                    >
+                        {savedWishlist ? 'Remove from Wishlist' : 'Save to Wishlist'}
+                    </button>
+
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (savedQueued) {
+                                removeItem('queued', id);
+                            } else {
+                                addItem('queued', bookData);
+                            }
+                        }}
+                        className="wishlist-button"
+                    >
+                        {savedQueued ? 'Remove from Queued' : 'Mark as Queued'}
+                    </button>
+
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (savedRead) {
+                                removeItem('read', id);
+                            } else {
+                                addItem('read', bookData);
+                            }
+                        }}
+                        className="wishlist-button"
+                    >
+                        {savedRead ? 'Remove from Read' : 'Mark as Read'}
+                    </button>
+                </div>
+            )}
 
             <hr className="review-divider" />
             <div className="review-section">
@@ -111,12 +175,12 @@ const Details = () => {
 
                 {user && (
                     <form onSubmit={handleReviewSubmit} className="review-form">
-                        <textarea
-                            value={reviewText}
-                            onChange={(e) => setReviewText(e.target.value)}
-                            rows={4}
-                            placeholder="Write your review..."
-                        />
+            <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                rows={4}
+                placeholder="Write your review..."
+            />
                         <button type="submit">Submit Review</button>
                     </form>
                 )}
