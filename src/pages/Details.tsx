@@ -17,9 +17,9 @@ const Details = () => {
     const [reviewText, setReviewText] = useState('');
     const [reviews, setReviews] = useState<any[]>([]);
 
-    const savedWishlist = isSaved('wishlist', id || '');
-    const savedQueued = isSaved('queued', id || '');
-    const savedRead = isSaved('read', id || '');
+    const savedWishlist = isSaved('wishlist', id!);
+    const savedQueued = isSaved('queued', id!);
+    const savedRead = isSaved('read', id!);
 
     useEffect(() => {
         const fetchBook = async () => {
