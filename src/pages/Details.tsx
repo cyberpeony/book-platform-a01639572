@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import { getBookById } from '../services/api';
+import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { AuthContext } from '../context/AuthContext';
 
 const Details = () => {
     const { id } = useParams<{ id: string }>();
+    const { user } = useContext(AuthContext);
+
     const [book, setBook] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [reviewText, setReviewText] = useState('');
+    const [reviews, setReviews] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchBook = async () => {
@@ -22,6 +29,45 @@ const Details = () => {
 
         if (id) fetchBook();
     }, [id]);
+
+    useEffect(() => {
+        const loadReviews = async () => {
+            if (!id) return;
+            const q = query(collection(db, 'reviews'), where('id', '==', id));
+            const snapshot = await getDocs(q);
+            const result = snapshot.docs.map(doc => doc.data());
+            setReviews(result);
+        };
+
+        loadReviews();
+    }, [id]);
+
+    const handleReviewSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user || !reviewText.trim()) return;
+
+        const displayName =
+            user.displayName ||
+            (user.email ? user.email.split('@')[0] : 'Anonymous');
+
+        const review = {
+            id: id,
+            user: {
+                displayName,
+                uid: user.uid
+            },
+            review: reviewText.trim(),
+            createdAt: Timestamp.now()
+        };
+
+        try {
+            await addDoc(collection(db, 'reviews'), review);
+            setReviews(prev => [...prev, review]);
+            setReviewText('');
+        } catch (err) {
+            console.error('Error submitting review:', err);
+        }
+    };
 
     if (loading) return <p className="container">Loading book details...</p>;
     if (error) return <p className="container" style={{ color: 'red' }}>{error}</p>;
@@ -46,6 +92,35 @@ const Details = () => {
             <a href={info.previewLink} target="_blank" rel="noopener noreferrer">
                 Click here to view this book in Google Books.
             </a>
+
+            <hr className="review-divider" />
+            <div className="review-section">
+                <h3>Reviews</h3>
+
+                {reviews.length === 0 && <p>No reviews yet.</p>}
+                <div className="review-list">
+                    {reviews.map((r, i) => (
+                        <div key={i} className="review-item">
+                            <p style={{ marginBottom: '0.5rem' }}>
+                                <strong>{r.user.displayName}</strong>
+                            </p>
+                            <p>{r.review}</p>
+                        </div>
+                    ))}
+                </div>
+
+                {user && (
+                    <form onSubmit={handleReviewSubmit} className="review-form">
+                        <textarea
+                            value={reviewText}
+                            onChange={(e) => setReviewText(e.target.value)}
+                            rows={4}
+                            placeholder="Write your review..."
+                        />
+                        <button type="submit">Submit Review</button>
+                    </form>
+                )}
+            </div>
         </div>
     );
 };
